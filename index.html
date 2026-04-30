@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>你是哪種動物？人格測驗</title>
+  <meta property="og:title" content="你是哪種動物？人格測驗" />
+  <meta property="og:description" content="6 個問題，解鎖你的動物人格原型與天賦方向" />
+  <meta name="twitter:card" content="summary" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f5f5f3;
+      --bg-tertiary: #efede7;
+      --text: #1a1a1a;
+      --text-secondary: #6b6a66;
+      --text-tertiary: #9b9a96;
+      --border: rgba(0,0,0,0.12);
+      --border-md: rgba(0,0,0,0.22);
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --purple-50: #EEEDFE;
+      --purple-200: #AFA9EC;
+      --purple-400: #7F77DD;
+      --purple-600: #534AB7;
+      --purple-800: #3C3489;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a;
+        --bg-secondary: #252523;
+        --bg-tertiary: #2e2e2b;
+        --text: #f0ede6;
+        --text-secondary: #9b9a96;
+        --text-tertiary: #6b6a66;
+        --border: rgba(255,255,255,0.10);
+        --border-md: rgba(255,255,255,0.20);
+        --purple-50: #26215C;
+        --purple-200: #534AB7;
+        --purple-400: #7F77DD;
+        --purple-600: #AFA9EC;
+        --purple-800: #CECBF6;
+      }
+    }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg-tertiary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* --- Intro --- */
+    .intro-title {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .intro-sub {
+      font-size: 15px;
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+    }
+    .intro-animals {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      font-size: 36px;
+      margin: 1.5rem 0;
+      flex-wrap: wrap;
+    }
+    .animal-hint {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    /* --- Progress --- */
+    .progress-wrap { margin-bottom: 1.5rem; }
+    .progress-bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--purple-400);
+      border-radius: 3px;
+      transition: width 0.5s cubic-bezier(.4,0,.2,1);
+    }
+    .progress-label {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    /* --- Question --- */
+    .q-text {
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1.55;
+      margin-bottom: 1.25rem;
+    }
+    .opt-btn {
+      width: 100%;
+      text-align: left;
+      padding: 13px 16px;
+      margin-bottom: 8px;
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text);
+      transition: border-color 0.15s, background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .opt-btn:hover { border-color: var(--purple-200); background: var(--purple-50); }
+    .opt-btn.selected { border-color: var(--purple-400); background: var(--purple-50); color: var(--purple-800); }
+    .opt-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--bg-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+    .opt-btn.selected .opt-icon { background: var(--purple-200); }
+
+    /* --- Buttons --- */
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 500;
+      border-radius: var(--radius-lg);
+      border: 0.5px solid var(--border-md);
+      background: transparent;
+      cursor: pointer;
+      color: var(--text);
+      margin-top: 8px;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--bg-secondary); }
+    .btn-primary:disabled { opacity: 0.3; cursor: default; }
+    .btn-secondary {
+      width: 100%;
+      padding: 11px;
+      font-size: 13px;
+      border-radius: var(--radius-md);
+      border: 0.5px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      color: var(--text-secondary);
+      margin-top: 6px;
+      transition: background 0.15s;
+    }
+    .btn-secondary:hover { background: var(--bg-secondary); }
+
+    /* --- Result --- */
+    .result-hero {
+      text-align: center;
+      padding: 2rem 0 1.25rem;
+    }
+    .result-emoji {
+      font-size: 80px;
+      line-height: 1;
+      display: block;
+      margin-bottom: 14px;
+      animation: pop 0.4s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes pop {
+      from { transform: scale(0.5); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .result-name {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .result-sub {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    /* --- Cards --- */
+    .card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 10px;
+    }
+    .card-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    /* --- Traits --- */
+    .trait-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .trait-label { font-size: 12px; color: var(--text-secondary); width: 52px; flex-shrink: 0; }
+    .trait-bg { flex: 1; height: 8px; background: var(--bg-secondary); border-radius: 4px; overflow: hidden; }
+    .trait-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+    .trait-val { font-size: 12px; color: var(--text-tertiary); width: 24px; text-align: right; }
+
+    /* --- Job tags --- */
+    .job-tag {
+      display: inline-block;
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      margin: 3px 3px 0 0;
+      background: var(--purple-50);
+      color: var(--purple-800);
+      font-weight: 500;
+    }
+
+    /* --- Compatibility --- */
+    .compat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .compat-item {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+    }
+    .compat-emoji { font-size: 22px; display: block; margin-bottom: 4px; }
+    .compat-name { font-weight: 500; color: var(--text); font-size: 12px; display: block; margin-bottom: 2px; }
+    .compat-desc { color: var(--text-secondary); font-size: 11px; }
+
+    /* --- AI block --- */
+    .ai-desc { font-size: 14px; color: var(--text); line-height: 1.75; }
+    .dot-pulse { display: flex; gap: 5px; align-items: center; }
+    .dot-pulse span {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--purple-400);
+      animation: pulse 1.2s infinite;
+    }
+    .dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+    .dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+    .ai-loading { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-secondary); }
+
+    /* --- API key prompt --- */
+    .apikey-wrap {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .apikey-wrap p { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+    .apikey-wrap input {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 13px;
+      border: 0.5px solid var(--border-md);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+      color: var(--text);
+    }
+    .apikey-wrap input:focus { outline: none; border-color: var(--purple-400); }
+
+    /* --- Footer --- */
+    .footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- INTRO -->
+  <div id="intro" class="screen active">
+    <p class="intro-title">你是哪種動物？</p>
+    <p class="intro-sub">6 個問題，解鎖你的人格原型與天賦方向</p>
+    <div class="intro-animals">
+      <span>🦁</span><span>🐬</span><span>🦊</span>
+      <span>🦉</span><span>🐺</span><span>🦎</span>
+    </div>
+    <p class="animal-hint">6 種動物等你解鎖</p>
+    <div class="apikey-wrap">
+      <p>輸入 Anthropic API Key 以啟用 AI 專屬解讀（選填）</p>
+      <input type="password" id="api-key-input" placeholder="sk-ant-..." />
+    </div>
+    <button class="btn-primary" onclick="startQuiz()">開始測驗 →</button>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quiz" class="screen">
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+      <p class="progress-label" id="q-counter"></p>
+    </div>
+    <p class="q-text" id="q-text"></p>
+    <div id="q-options"></div>
+    <button class="btn-primary" id="next-btn" disabled onclick="nextQ()">下一題 →</button>
+  </div>
+
+  <!-- RESULT -->
+  <div id="result" class="screen">
+    <div class="result-hero">
+      <span class="result-emoji" id="res-emoji"></span>
+      <p class="result-name" id="res-name"></p>
+      <p class="result-sub" id="res-sub"></p>
+    </div>
+
+    <div class="card">
+      <p class="card-label">人格特質</p>
+      <div id="res-traits"></div>
+    </div>
+
+    <div class="card">
+      <p class="card-label">適合領域</p>
+      <div id="res-jobs"></div>
+    </div>
+
+    <div class="card">
+      <p class="card-label">動物相性</p>
+      <div class="compat-grid" id="res-compat"></div>
+    </div>
+
+    <div class="card" id="ai-card">
+      <p class="card-label">AI 專屬解讀</p>
+      <div id="ai-content">
+        <div class="ai-loading">
+          <div class="dot-pulse"><span></span><span></span><span></span></div>
+          <span>正在生成你的專屬分析...</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="copyResult()">複製結果分享 🔗</button>
+    <button class="btn-secondary" onclick="resetQuiz()">重新測驗</button>
+
+    <div class="footer">made with Claude · <a href="https://claude.ai" style="color:inherit">claude.ai</a></div>
+  </div>
+
+</div>
+
+<script>
+const questions = [
+  { text: "🌅 週末突然空出來，你最想怎麼過？", opts: [
+    { icon: "🎉", t: "找朋友出去，越熱鬧越好", v: "E" },
+    { icon: "🛋️", t: "一個人待在家，充電放空", v: "I" },
+    { icon: "🗺️", t: "計畫一個小旅行，探索新地方", v: "A" },
+    { icon: "⚡", t: "把積壓的事情全部清掉", v: "D" }
+  ]},
+  { text: "🆘 朋友遇到困難來找你，你第一反應是？", opts: [
+    { icon: "💡", t: "馬上給建議，幫他想解法", v: "D" },
+    { icon: "🤗", t: "先聽他說完，陪他感受情緒", v: "E" },
+    { icon: "📚", t: "查資料、找案例，給最完整資訊", v: "I" },
+    { icon: "😄", t: "用幽默化解緊張，讓他放鬆", v: "C" }
+  ]},
+  { text: "🌊 遇到突發狀況，你通常會？", opts: [
+    { icon: "🔥", t: "直接衝，邊做邊學", v: "D" },
+    { icon: "🧭", t: "先觀察局勢，再找最佳切入點", v: "W" },
+    { icon: "🤝", t: "立刻找人合作，集結資源", v: "E" },
+    { icon: "🔄", t: "靈活調整，隨機應變", v: "Ch" }
+  ]},
+  { text: "💼 你最享受哪種工作狀態？", opts: [
+    { icon: "👑", t: "帶領團隊、做決策", v: "D" },
+    { icon: "🔬", t: "深入研究一個問題到底", v: "I" },
+    { icon: "🎨", t: "自由創作，沒有框架", v: "C" },
+    { icon: "🕵️", t: "在幕後策劃、觀察全局", v: "W" }
+  ]},
+  { text: "🎯 你覺得自己最大的優勢是？", opts: [
+    { icon: "⚡", t: "執行力強，說到做到", v: "D" },
+    { icon: "❤️", t: "很會讀懂人心", v: "E" },
+    { icon: "✨", t: "創意無限，點子多", v: "C" },
+    { icon: "🧠", t: "分析力強，邏輯清晰", v: "I" }
+  ]},
+  { text: "🌟 下面哪句話最像你？", opts: [
+    { icon: "🦁", t: "「我要的結果，我自己去拿」", v: "D" },
+    { icon: "🌊", t: "「人與人之間的連結最重要」", v: "E" },
+    { icon: "🎭", t: "「世界需要更多美與故事」", v: "C" },
+    { icon: "🐺", t: "「耐心等待，時機到了就出手」", v: "W" }
+  ]}
+];
+
+const animals = {
+  D: { emoji: "🦁", name: "領袖獅子", sub: "天生的指揮官，行動力爆表", color: "#EF9F27",
+    traits: [{l:"執行力",v:95,c:"#EF9F27"},{l:"決策力",v:90,c:"#EF9F27"},{l:"同理心",v:55,c:"#AFA9EC"},{l:"創造力",v:65,c:"#AFA9EC"}],
+    jobs: ["創業家","專案經理","業務主管","產品負責人"],
+    compat: [{e:"🐺",n:"直覺狼",d:"互補，一個衝一個謀"},{e:"🦉",n:"智慧貓頭鷹",d:"你執行，他分析"},{e:"🦊",n:"創意狐狸",d:"創意+執行力超強"},{e:"🐬",n:"共鳴海豚",d:"你推進，他暖場"}] },
+  E: { emoji: "🐬", name: "共鳴海豚", sub: "人際關係的天才，溫暖有感染力", color: "#5DCAA5",
+    traits: [{l:"同理心",v:97,c:"#5DCAA5"},{l:"溝通力",v:90,c:"#5DCAA5"},{l:"分析力",v:60,c:"#AFA9EC"},{l:"執行力",v:65,c:"#AFA9EC"}],
+    jobs: ["心理師","教育工作者","公關行銷","人資"],
+    compat: [{e:"🦁",n:"領袖獅子",d:"你暖場，他推進"},{e:"🦎",n:"變色龍",d:"兩人都超有彈性"},{e:"🦊",n:"創意狐狸",d:"感性共鳴超強"},{e:"🦉",n:"智慧貓頭鷹",d:"情感+邏輯的平衡"}] },
+  C: { emoji: "🦊", name: "創意狐狸", sub: "跳出框架的思考者，靈感不斷", color: "#D85A30",
+    traits: [{l:"創造力",v:97,c:"#D85A30"},{l:"直覺力",v:88,c:"#D85A30"},{l:"執行力",v:52,c:"#AFA9EC"},{l:"分析力",v:65,c:"#AFA9EC"}],
+    jobs: ["設計師","內容創作者","導演編劇","品牌策略"],
+    compat: [{e:"🦉",n:"智慧貓頭鷹",d:"創意+邏輯=絕配"},{e:"🐺",n:"直覺狼",d:"兩個直覺派默契超高"},{e:"🐬",n:"共鳴海豚",d:"感性共鳴超強"},{e:"🦎",n:"變色龍",d:"彈性合作無縫接軌"}] },
+  I: { emoji: "🦉", name: "智慧貓頭鷹", sub: "深度思考的研究者，見微知著", color: "#7F77DD",
+    traits: [{l:"分析力",v:97,c:"#7F77DD"},{l:"專注力",v:92,c:"#7F77DD"},{l:"創造力",v:65,c:"#AFA9EC"},{l:"人際力",v:50,c:"#AFA9EC"}],
+    jobs: ["數據分析師","研究員","工程師","財務法律"],
+    compat: [{e:"🦊",n:"創意狐狸",d:"落地與想像互補"},{e:"🦁",n:"領袖獅子",d:"你分析，他行動"},{e:"🐺",n:"直覺狼",d:"策略共鳴"},{e:"🦎",n:"變色龍",d:"穩定錨點讓你發揮"}] },
+  W: { emoji: "🐺", name: "直覺狼", sub: "策略型獵人，沉默中積蓄力量", color: "#888780",
+    traits: [{l:"策略力",v:95,c:"#888780"},{l:"耐心",v:90,c:"#888780"},{l:"執行力",v:75,c:"#888780"},{l:"同理心",v:60,c:"#AFA9EC"}],
+    jobs: ["策略顧問","投資分析","談判專家","導演"],
+    compat: [{e:"🦁",n:"領袖獅子",d:"謀略+衝勁=無敵"},{e:"🦊",n:"創意狐狸",d:"直覺共鳴理解彼此"},{e:"🦉",n:"智慧貓頭鷹",d:"策略共鳴"},{e:"🦎",n:"變色龍",d:"彈性補足你的堅定"}] },
+  Ch: { emoji: "🦎", name: "變色龍", sub: "超強適應力，任何環境都能生存", color: "#1D9E75",
+    traits: [{l:"適應力",v:98,c:"#1D9E75"},{l:"社交力",v:85,c:"#1D9E75"},{l:"決策力",v:55,c:"#AFA9EC"},{l:"專注力",v:58,c:"#AFA9EC"}],
+    jobs: ["顧問","跨領域PM","外交官","斜槓創作者"],
+    compat: [{e:"🐬",n:"共鳴海豚",d:"都超彈性合作無縫"},{e:"🦉",n:"智慧貓頭鷹",d:"穩定錨點讓你發揮"},{e:"🦊",n:"創意狐狸",d:"彈性合作無縫接軌"},{e:"🐺",n:"直覺狼",d:"彈性補足他的堅定"}] }
+};
+
+let cur = 0, answers = [], apiKey = '';
+
+function startQuiz() {
+  apiKey = document.getElementById('api-key-input').value.trim();
+  document.getElementById('intro').classList.remove('active');
+  document.getElementById('quiz').classList.add('active');
+  renderQ();
+}
+
+function renderQ() {
+  const q = questions[cur];
+  document.getElementById('q-text').textContent = q.text;
+  document.getElementById('q-counter').textContent = `第 ${cur + 1} 題 / 共 ${questions.length} 題`;
+  document.getElementById('prog').style.width = `${(cur / questions.length) * 100}%`;
+  const nb = document.getElementById('next-btn');
+  nb.disabled = true;
+  nb.textContent = cur === questions.length - 1 ? '看結果 🎉' : '下一題 →';
+  const box = document.getElementById('q-options');
+  box.innerHTML = '';
+  q.opts.forEach(o => {
+    const b = document.createElement('button');
+    b.className = 'opt-btn';
+    b.innerHTML = `<span class="opt-icon">${o.icon}</span><span>${o.t}</span>`;
+    b.onclick = () => {
+      box.querySelectorAll('.opt-btn').forEach(x => x.classList.remove('selected'));
+      b.classList.add('selected');
+      answers[cur] = o.v;
+      nb.disabled = false;
+    };
+    box.appendChild(b);
+  });
+}
+
+function nextQ() {
+  if (cur < questions.length - 1) { cur++; renderQ(); }
+  else showResult();
+}
+
+function showResult() {
+  const counts = { D:0, E:0, C:0, I:0, W:0, Ch:0 };
+  answers.forEach(v => { if (counts[v] !== undefined) counts[v]++; });
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+  const a = animals[top];
+
+  document.getElementById('quiz').classList.remove('active');
+  document.getElementById('result').classList.add('active');
+  document.getElementById('res-emoji').textContent = a.emoji;
+  document.getElementById('res-name').textContent = a.name;
+  document.getElementById('res-sub').textContent = a.sub;
+
+  const tb = document.getElementById('res-traits');
+  tb.innerHTML = '';
+  a.traits.forEach(t => {
+    tb.innerHTML += `<div class="trait-row">
+      <span class="trait-label">${t.l}</span>
+      <div class="trait-bg"><div class="trait-fill" style="width:0%;background:${t.c}" data-w="${t.v}"></div></div>
+      <span class="trait-val">${t.v}</span>
+    </div>`;
+  });
+  setTimeout(() => {
+    document.querySelectorAll('.trait-fill').forEach(el => { el.style.width = el.dataset.w + '%'; });
+  }, 150);
+
+  document.getElementById('res-jobs').innerHTML = a.jobs.map(j => `<span class="job-tag">${j}</span>`).join('');
+
+  document.getElementById('res-compat').innerHTML = a.compat.map(c =>
+    `<div class="compat-item">
+      <span class="compat-emoji">${c.e}</span>
+      <span class="compat-name">${c.n}</span>
+      <span class="compat-desc">${c.d}</span>
+    </div>`
+  ).join('');
+
+  if (apiKey) {
+    callClaude(a, top);
+  } else {
+    document.getElementById('ai-content').innerHTML =
+      `<p style="font-size:13px;color:var(--text-secondary)">在首頁輸入 Anthropic API Key 可解鎖 AI 專屬解讀 ✨</p>`;
+  }
+}
+
+async function callClaude(animal, type) {
+  const answersDesc = answers.map((v, i) => {
+    const q = questions[i];
+    const opt = q.opts.find(o => o.v === v);
+    return opt ? opt.t : '';
+  }).filter(Boolean).join('、');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-calls': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `你是一個風趣、溫暖的人格測驗解說師。用繁體中文回答，語氣輕鬆像朋友說話，帶一點幽默感。不要用列點，寫成2-3句有溫度的短段落，150字以內。`,
+        messages: [{ role: 'user', content: `這個人做了動物人格測驗，結果是「${animal.name}」（${animal.emoji}）。他在測驗中選擇了：${answersDesc}。請給他一段專屬的、個人化的人格解讀，提到他的選擇，讓他感覺「這真的是在說我」。` }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(i => i.text || '').join('') || '';
+    document.getElementById('ai-content').innerHTML = `<p class="ai-desc">${text}</p>`;
+  } catch (e) {
+    document.getElementById('ai-content').innerHTML =
+      `<p style="font-size:13px;color:var(--text-secondary)">AI 解讀載入失敗，請確認 API Key 是否正確。</p>`;
+  }
+}
+
+function copyResult() {
+  const name = document.getElementById('res-name').textContent;
+  const emoji = document.getElementById('res-emoji').textContent;
+  const sub = document.getElementById('res-sub').textContent;
+  const text = `我做了動物人格測驗，結果是 ${emoji} ${name}！\n「${sub}」\n\n你是哪種動物？快來測：${window.location.href}`;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.btn-primary');
+    const orig = btn.textContent;
+    btn.textContent = '已複製！✓';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  }).catch(() => { alert('請手動複製：\n' + text); });
+}
+
+function resetQuiz() {
+  cur = 0; answers = [];
+  document.getElementById('result').classList.remove('active');
+  document.getElementById('intro').classList.add('active');
+  document.getElementById('next-btn').textContent = '下一題 →';
+  document.getElementById('ai-content').innerHTML = `<div class="ai-loading"><div class="dot-pulse"><span></span><span></span><span></span></div><span>正在生成你的專屬分析...</span></div>`;
+}
+</script>
+</body>
+</html>

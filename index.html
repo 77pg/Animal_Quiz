@@ -311,10 +311,6 @@
       <span>🦉</span><span>🐺</span><span>🦎</span>
     </div>
     <p class="animal-hint">6 種動物等你解鎖</p>
-    <div class="apikey-wrap">
-      <p>輸入 Anthropic API Key 以啟用 AI 專屬解讀（選填）</p>
-      <input type="password" id="api-key-input" placeholder="sk-ant-..." />
-    </div>
     <button class="btn-primary" onclick="startQuiz()">開始測驗 →</button>
   </div>
 
@@ -353,11 +349,12 @@
     </div>
 
     <div class="card" id="ai-card">
-      <p class="card-label">AI 專屬解讀</p>
+      <p class="card-label">✨ AI 專屬解讀</p>
       <div id="ai-content">
-        <div class="ai-loading">
-          <div class="dot-pulse"><span></span><span></span><span></span></div>
-          <span>正在生成你的專屬分析...</span>
+        <div class="apikey-wrap" id="apikey-section">
+          <p>輸入 Gemini API Key，解鎖專屬你的 AI 個人化分析</p>
+          <input type="password" id="api-key-input" placeholder="AIza..." />
+          <button class="btn-primary" onclick="submitApiKey()" style="margin-top:10px">生成 AI 解讀 →</button>
         </div>
       </div>
     </div>
@@ -440,7 +437,6 @@ const animals = {
 let cur = 0, answers = [], apiKey = '';
 
 function startQuiz() {
-  apiKey = document.getElementById('api-key-input').value.trim();
   document.getElementById('intro').classList.remove('active');
   document.getElementById('quiz').classList.add('active');
   renderQ();
@@ -510,12 +506,23 @@ function showResult() {
     </div>`
   ).join('');
 
-  if (apiKey) {
-    callClaude(a, top);
-  } else {
-    document.getElementById('ai-content').innerHTML =
-      `<p style="font-size:13px;color:var(--text-secondary)">在首頁輸入 Anthropic API Key 可解鎖 AI 專屬解讀 ✨</p>`;
-  }
+  // store animal for later AI call
+  window._currentAnimal = a;
+  window._currentAnimalType = top;
+}
+
+async function submitApiKey() {
+  apiKey = document.getElementById('api-key-input').value.trim();
+  if (!apiKey) return;
+
+  // Show loading
+  document.getElementById('ai-content').innerHTML = `
+    <div class="ai-loading">
+      <div class="dot-pulse"><span></span><span></span><span></span></div>
+      <span>AI 分析中，請稍候...</span>
+    </div>`;
+
+  await callClaude(window._currentAnimal, window._currentAnimalType);
 }
 
 async function callClaude(animal, type) {
@@ -525,28 +532,30 @@ async function callClaude(animal, type) {
     return opt ? opt.t : '';
   }).filter(Boolean).join('、');
 
+  const prompt = `你是一個風趣、溫暖的人格測驗解說師。用繁體中文回答，語氣輕鬆像朋友說話，帶一點幽默感。不要用列點，寫成2-3句有溫度的短段落，150字以內。\n\n這個人做了動物人格測驗，結果是「${animal.name}」（${animal.emoji}）。他在測驗中選擇了：${answersDesc}。請給他一段專屬的、個人化的人格解讀，提到他的選擇，讓他感覺「這真的是在說我」。`;
+
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-calls': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: `你是一個風趣、溫暖的人格測驗解說師。用繁體中文回答，語氣輕鬆像朋友說話，帶一點幽默感。不要用列點，寫成2-3句有溫度的短段落，150字以內。`,
-        messages: [{ role: 'user', content: `這個人做了動物人格測驗，結果是「${animal.name}」（${animal.emoji}）。他在測驗中選擇了：${answersDesc}。請給他一段專屬的、個人化的人格解讀，提到他的選擇，讓他感覺「這真的是在說我」。` }]
-      })
-    });
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      }
+    );
     const data = await res.json();
-    const text = data.content?.map(i => i.text || '').join('') || '';
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!text) throw new Error('empty');
     document.getElementById('ai-content').innerHTML = `<p class="ai-desc">${text}</p>`;
   } catch (e) {
-    document.getElementById('ai-content').innerHTML =
-      `<p style="font-size:13px;color:var(--text-secondary)">AI 解讀載入失敗，請確認 API Key 是否正確。</p>`;
+    document.getElementById('ai-content').innerHTML = `
+      <div class="apikey-wrap">
+        <p style="color:#c0392b;margin-bottom:8px">⚠️ API Key 錯誤或無效，請重新輸入</p>
+        <input type="password" id="api-key-input" placeholder="AIza..." />
+        <button class="btn-primary" onclick="submitApiKey()" style="margin-top:10px">重新送出 →</button>
+      </div>`;
   }
 }
 
@@ -568,7 +577,14 @@ function resetQuiz() {
   document.getElementById('result').classList.remove('active');
   document.getElementById('intro').classList.add('active');
   document.getElementById('next-btn').textContent = '下一題 →';
-  document.getElementById('ai-content').innerHTML = `<div class="ai-loading"><div class="dot-pulse"><span></span><span></span><span></span></div><span>正在生成你的專屬分析...</span></div>`;
+  document.getElementById('ai-content').innerHTML = `
+    <div class="apikey-section" id="apikey-section">
+      <div class="apikey-wrap">
+        <p>輸入 Gemini API Key，解鎖專屬你的 AI 個人化分析</p>
+        <input type="password" id="api-key-input" placeholder="AIza..." />
+        <button class="btn-primary" onclick="submitApiKey()" style="margin-top:10px">生成 AI 解讀 →</button>
+      </div>
+    </div>`;
 }
 </script>
 </body>
